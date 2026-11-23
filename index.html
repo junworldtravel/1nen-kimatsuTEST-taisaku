@@ -16,17 +16,17 @@
   --bg: #EAF1F6; --surface: #FFFFFF; --ink: #172231; --muted: #5B6878; --line: #D3DDE6; --on: #FFFFFF;
   --asia: #24658A; --asia-soft: #DCEAF1; --asia2: #0E8A72; --asia2-soft: #D7F0E9;
   --me: #B05A12; --me-soft: #F7E7D9; --eu: #6B48B0; --eu-soft: #ECE5F8; --en: #B23A6A; --en-soft: #F8E3EC;
-  --af: #9A5B13; --af-soft: #F5E9D6; --na: #1F6F5C; --na-soft: #DDEFE9; --sa: #A8414F; --sa-soft: #F7E2E5;
+  --af: #9A5B13; --af-soft: #F5E9D6; --na: #1F6F5C; --na-soft: #DDEFE9; --sa: #A8414F; --sa-soft: #F7E2E5; --oc: #2B5FA8; --oc-soft: #DFE8F6;
   --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
   --font-body: "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --bg: #0F171D; --surface: #18232B; --ink: #E4ECF2; --muted: #9AABB8; --line: #2C3A45; --on: #10161B;
-    --asia: #73B6D8; --asia-soft: #1E3540; --asia2: #3FC2A3; --asia2-soft: #163A33; --me: #E8A267; --me-soft: #3A2A1C; --eu: #B79BF0; --eu-soft: #2B2340; --en: #F08DB4; --en-soft: #3D2230; --af: #E0A75A; --af-soft: #3A2C18; --na: #6CC3A8; --na-soft: #1B3530; --sa: #E68A97; --sa-soft: #3E2328; color-scheme: dark; }
+    --asia: #73B6D8; --asia-soft: #1E3540; --asia2: #3FC2A3; --asia2-soft: #163A33; --me: #E8A267; --me-soft: #3A2A1C; --eu: #B79BF0; --eu-soft: #2B2340; --en: #F08DB4; --en-soft: #3D2230; --af: #E0A75A; --af-soft: #3A2C18; --na: #6CC3A8; --na-soft: #1B3530; --sa: #E68A97; --sa-soft: #3E2328; --oc: #86AEE8; --oc-soft: #1E2A3E; color-scheme: dark; }
 }
 :root[data-theme="dark"] { --bg: #0F171D; --surface: #18232B; --ink: #E4ECF2; --muted: #9AABB8; --line: #2C3A45; --on: #10161B;
-  --asia: #73B6D8; --asia-soft: #1E3540; --asia2: #3FC2A3; --asia2-soft: #163A33; --me: #E8A267; --me-soft: #3A2A1C; --eu: #B79BF0; --eu-soft: #2B2340; --en: #F08DB4; --en-soft: #3D2230; --af: #E0A75A; --af-soft: #3A2C18; --na: #6CC3A8; --na-soft: #1B3530; --sa: #E68A97; --sa-soft: #3E2328; color-scheme: dark; }
+  --asia: #73B6D8; --asia-soft: #1E3540; --asia2: #3FC2A3; --asia2-soft: #163A33; --me: #E8A267; --me-soft: #3A2A1C; --eu: #B79BF0; --eu-soft: #2B2340; --en: #F08DB4; --en-soft: #3D2230; --af: #E0A75A; --af-soft: #3A2C18; --na: #6CC3A8; --na-soft: #1B3530; --sa: #E68A97; --sa-soft: #3E2328; --oc: #86AEE8; --oc-soft: #1E2A3E; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.65;
   padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -58,7 +58,8 @@ a:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .asia .map2 { --c: var(--asia2); --cs: var(--asia2-soft); }
 .me { --c: var(--me); --cs: var(--me-soft); }
 .wd { --c: var(--na); --cs: var(--na-soft); }
-.wd .af { --c: var(--af); --cs: var(--af-soft); } .wd .na { --c: var(--na); --cs: var(--na-soft); } .wd .sa { --c: var(--sa); --cs: var(--sa-soft); }
+.wd .af { --c: var(--af); --cs: var(--af-soft); } .wd .na { --c: var(--na); --cs: var(--na-soft); } .wd .sa { --c: var(--sa); --cs: var(--sa-soft); } .wd .oc { --c: var(--oc); --cs: var(--oc-soft); }
+.set h4 { margin: .3rem 0 0; font-size: .88rem; font-family: var(--font-display); color: var(--c); }
 ol.toc { margin: 0; padding: .5rem .7rem; list-style: none; background: var(--cs); border-radius: 12px; display: grid; gap: .15rem; font-size: .86rem; counter-reset: t; }
 ol.toc li { display: grid; grid-template-columns: 1.5rem 1fr auto; gap: .3rem; align-items: baseline; counter-increment: t; }
 ol.toc li::before { content: counter(t, decimal); font-family: var(--font-display); font-weight: 900; color: var(--c); text-align: center; }
@@ -76,33 +77,75 @@ ol.toc li span { color: var(--muted); font-size: .78rem; font-variant-numeric: t
   <section class="region wd" id="wd">
     <h2>世界の諸地域</h2>
     <div class="set af">
-      <h3><span class="no">④-1</span>アフリカ　一問一答52問</h3>
-      <p>問題集「9 アフリカ（p.60〜63）・まとめの問題 p.76」から。スタート画面の目次で、単元をえらんで出題できます。</p>
-      <ol class="toc" aria-label="アフリカの目次"><li>自然環境<span>22問</span></li><li>歴史・人口・民族・宗教<span>12問</span></li><li>産業<span>18問</span></li></ol>
+      <h3><span class="no">④-1</span>アフリカ</h3>
+      <h4>一問一答 61問</h4>
+      <p>問題集「9 アフリカ（p.60〜63）・まとめの問題 p.76」から。スタート画面の目次で、単元をえらんで出題できます。「説明（5択）」は、説明を読んで5つの言葉から選びます。</p>
+      <ol class="toc" aria-label="アフリカの目次"><li>自然環境<span>22問</span></li><li>歴史・人口・民族・宗教<span>12問</span></li><li>産業<span>18問</span></li><li>説明（5択）<span>9問</span></li></ol>
       <div class="grid4">
         <span></span><span class="hd">声で答える</span><span class="hd">文字で答える</span>
         <span class="rl">a）声で出題<small>読み上げ</small></span><a class="home" href="af-qa.html#a-voice">a・声</a><a class="train" href="af-qa.html#a-text">a・文字</a>
         <span class="rl">b）文字で出題<small>画面の文</small></span><a class="home" href="af-qa.html#b-voice">b・声</a><a class="train" href="af-qa.html#b-text">b・文字</a>
       </div>
+      <h4>白地図 10問</h4>
+      <p>問題集「地図で整理 8 アフリカ州（p.91）」と同じ番号の地名を、地図を見て答えます。</p>
+      <div class="grid4">
+        <span></span><span class="hd">声で答える</span><span class="hd">文字で答える</span>
+        <span class="rl">a）声で出題<small>読み上げ</small></span><a class="home" href="af-map.html#a-voice">a・声</a><a class="train" href="af-map.html#a-text">a・文字</a>
+        <span class="rl">b）文字で出題<small>画面の文</small></span><a class="home" href="af-map.html#b-voice">b・声</a><a class="train" href="af-map.html#b-text">b・文字</a>
+      </div>
     </div>
     <div class="set na">
-      <h3><span class="no">④-2</span>北アメリカ　一問一答56問</h3>
-      <p>問題集「10 北アメリカ（p.64〜67）・まとめの問題 p.77」から。スタート画面の目次で、単元をえらんで出題できます。</p>
-      <ol class="toc" aria-label="北アメリカの目次"><li>自然環境<span>22問</span></li><li>人口・民族・宗教・文化<span>12問</span></li><li>北アメリカの農牧業<span>9問</span></li><li>北アメリカの鉱工業，貿易<span>13問</span></li></ol>
+      <h3><span class="no">④-2</span>北アメリカ</h3>
+      <h4>一問一答 64問</h4>
+      <p>問題集「10 北アメリカ（p.64〜67）・まとめの問題 p.77」から。スタート画面の目次で、単元をえらんで出題できます。「説明（5択）」は、説明を読んで5つの言葉から選びます。</p>
+      <ol class="toc" aria-label="北アメリカの目次"><li>自然環境<span>22問</span></li><li>人口・民族・宗教・文化<span>12問</span></li><li>北アメリカの農牧業<span>9問</span></li><li>北アメリカの鉱工業，貿易<span>13問</span></li><li>説明（5択）<span>8問</span></li></ol>
       <div class="grid4">
         <span></span><span class="hd">声で答える</span><span class="hd">文字で答える</span>
         <span class="rl">a）声で出題<small>読み上げ</small></span><a class="home" href="na-qa.html#a-voice">a・声</a><a class="train" href="na-qa.html#a-text">a・文字</a>
         <span class="rl">b）文字で出題<small>画面の文</small></span><a class="home" href="na-qa.html#b-voice">b・声</a><a class="train" href="na-qa.html#b-text">b・文字</a>
       </div>
+      <h4>白地図 12問</h4>
+      <p>問題集「地図で整理 9 北アメリカ州（p.91）」と同じ番号の地名を、地図を見て答えます。</p>
+      <div class="grid4">
+        <span></span><span class="hd">声で答える</span><span class="hd">文字で答える</span>
+        <span class="rl">a）声で出題<small>読み上げ</small></span><a class="home" href="na-map.html#a-voice">a・声</a><a class="train" href="na-map.html#a-text">a・文字</a>
+        <span class="rl">b）文字で出題<small>画面の文</small></span><a class="home" href="na-map.html#b-voice">b・声</a><a class="train" href="na-map.html#b-text">b・文字</a>
+      </div>
     </div>
     <div class="set sa">
-      <h3><span class="no">④-3</span>南アメリカ　一問一答45問</h3>
-      <p>問題集「11 南アメリカ（p.68〜71）・まとめの問題 p.78」から。スタート画面の目次で、単元をえらんで出題できます。</p>
-      <ol class="toc" aria-label="南アメリカの目次"><li>自然環境<span>20問</span></li><li>民族・宗教<span>9問</span></li><li>産業<span>16問</span></li></ol>
+      <h3><span class="no">④-3</span>南アメリカ</h3>
+      <h4>一問一答 53問</h4>
+      <p>問題集「11 南アメリカ（p.68〜71）・まとめの問題 p.78」から。スタート画面の目次で、単元をえらんで出題できます。「説明（5択）」は、説明を読んで5つの言葉から選びます。</p>
+      <ol class="toc" aria-label="南アメリカの目次"><li>自然環境<span>20問</span></li><li>民族・宗教<span>9問</span></li><li>産業<span>16問</span></li><li>説明（5択）<span>8問</span></li></ol>
       <div class="grid4">
         <span></span><span class="hd">声で答える</span><span class="hd">文字で答える</span>
         <span class="rl">a）声で出題<small>読み上げ</small></span><a class="home" href="sa-qa.html#a-voice">a・声</a><a class="train" href="sa-qa.html#a-text">a・文字</a>
         <span class="rl">b）文字で出題<small>画面の文</small></span><a class="home" href="sa-qa.html#b-voice">b・声</a><a class="train" href="sa-qa.html#b-text">b・文字</a>
+      </div>
+      <h4>白地図 9問</h4>
+      <p>問題集「地図で整理 10 南アメリカ州（p.92）」と同じ番号の地名を、地図を見て答えます。</p>
+      <div class="grid4">
+        <span></span><span class="hd">声で答える</span><span class="hd">文字で答える</span>
+        <span class="rl">a）声で出題<small>読み上げ</small></span><a class="home" href="sa-map.html#a-voice">a・声</a><a class="train" href="sa-map.html#a-text">a・文字</a>
+        <span class="rl">b）文字で出題<small>画面の文</small></span><a class="home" href="sa-map.html#b-voice">b・声</a><a class="train" href="sa-map.html#b-text">b・文字</a>
+      </div>
+    </div>
+    <div class="set oc">
+      <h3><span class="no">④-4</span>オセアニア</h3>
+      <h4>一問一答 52問</h4>
+      <p>問題集「12 オセアニア（p.72〜75）・まとめの問題 p.79」から。スタート画面の目次で、単元をえらんで出題できます。「説明（5択）」は、説明を読んで5つの言葉から選びます。</p>
+      <ol class="toc" aria-label="オセアニアの目次"><li>自然環境<span>22問</span></li><li>人口・民族・宗教<span>8問</span></li><li>産業<span>14問</span></li><li>説明（5択）<span>8問</span></li></ol>
+      <div class="grid4">
+        <span></span><span class="hd">声で答える</span><span class="hd">文字で答える</span>
+        <span class="rl">a）声で出題<small>読み上げ</small></span><a class="home" href="oc-qa.html#a-voice">a・声</a><a class="train" href="oc-qa.html#a-text">a・文字</a>
+        <span class="rl">b）文字で出題<small>画面の文</small></span><a class="home" href="oc-qa.html#b-voice">b・声</a><a class="train" href="oc-qa.html#b-text">b・文字</a>
+      </div>
+      <h4>白地図 9問</h4>
+      <p>問題集「地図で整理 11 オセアニア州（p.92）」と同じ番号の地名を、地図を見て答えます。</p>
+      <div class="grid4">
+        <span></span><span class="hd">声で答える</span><span class="hd">文字で答える</span>
+        <span class="rl">a）声で出題<small>読み上げ</small></span><a class="home" href="oc-map.html#a-voice">a・声</a><a class="train" href="oc-map.html#a-text">a・文字</a>
+        <span class="rl">b）文字で出題<small>画面の文</small></span><a class="home" href="oc-map.html#b-voice">b・声</a><a class="train" href="oc-map.html#b-text">b・文字</a>
       </div>
     </div>
   </section>
