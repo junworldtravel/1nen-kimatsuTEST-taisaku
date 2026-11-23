@@ -9,7 +9,7 @@ WHO = {R: "龍星", Z: "ずんだもん"}
 Q = json.load(open(D + "/quizzes_world.json"))
 
 # 読みまちがいの直し（表示はそのまま、読み上げだけ書きかえる）
-SPEAK_FIX = {"五大湖": "ゴダイコ", "焼畑": "やきはた", "赤道付近": "せきどう付近", "日本から": "にほんから", "日本との": "にほんとの", "、平原、": "、へいげん、", "冷帯": "れいたい", "何問題": "なに問題", "日本の": "にほんの", "長江": "ちょうこう", "重慶": "チョンチン"}
+SPEAK_FIX = {"五大湖": "ゴダイコ", "白豪主義": "ハクゴウ主義", "北島と南島": "きたじまと、みなみじま", "焼畑": "やきはた", "赤道付近": "せきどう付近", "日本から": "にほんから", "日本との": "にほんとの", "、平原、": "、へいげん、", "冷帯": "れいたい", "何問題": "なに問題", "日本の": "にほんの", "長江": "ちょうこう", "重慶": "チョンチン"}
 KANA_FIX = {}   # 文 → AquesTalk風カナ（どうしても直らないとき）
 def sp(t):
     for a, b in SPEAK_FIX.items(): t = t.replace(a, b)
@@ -45,7 +45,7 @@ def quiz_lines(qz):
     L["retryIntro"] = (R, "まちがえた問題だけ、もう一度いくぞ。", None)
     for i, it in enumerate(qz["items"]):
         for j, s in enumerate(it["steps"]):
-            L[f"q{i}_{j}"] = (R, s["q"], s["qs"])
+            L[f"q{i}_{j}"] = (R, s["qs"] if s.get("choices") else s["q"], s["qs"])   # 5択は選択肢を読む部分も字幕に出す
             L[f"a{i}_{j}"] = (Z, strip_ng(s["ng"]), strip_ng(s["ngs"]))
     return L
 
@@ -87,7 +87,12 @@ def synth_mp3(t, spk):
             w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes(a.astype(np.int16).tobytes())
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-ac", "1", "-ar", "24000", "-b:a", "40k", mp3], check=True)
         os.remove(wav)
-    return base64.b64encode(open(mp3, "rb").read()).decode()
+    # 公開ページを小さくするため 32k に変換して使う（アップロードは1回約3.8MBまで）
+    m32 = mp3.replace("/wclips40/", "/wclips32/")
+    if not os.path.exists(m32):
+        os.makedirs(os.path.dirname(m32), exist_ok=True)
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", mp3, "-ac", "1", "-ar", "24000", "-b:a", "32k", m32], check=True)
+    return base64.b64encode(open(m32, "rb").read()).decode()
 
 OUT = json.load(open(D + "/world_audio.json")) if ONLY and os.path.exists(D + "/world_audio.json") else {}
 for qid, L in ALL.items():

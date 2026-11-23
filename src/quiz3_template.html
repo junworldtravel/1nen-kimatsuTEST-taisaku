@@ -108,6 +108,14 @@ select { font: inherit; font-weight: 700; padding: .35rem .5rem; border-radius: 
 .seg button b { font-family: var(--font-display); font-size: 1rem; }
 .seg button span { font-size: .72rem; color: var(--muted); }
 .seg button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.choices { display: grid; gap: .4rem; }
+.choices button { font: inherit; cursor: pointer; text-align: left; display: grid; grid-template-columns: 1.9rem 1fr; align-items: center; gap: .4rem; min-height: 3rem; padding: .45rem .7rem; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
+.choices button .cn { width: 1.7rem; height: 1.7rem; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.choices button:disabled { cursor: default; }
+.choices button.ok { border-color: var(--ok); background: var(--ok-soft, #E3F4EA); }
+.choices button.ng { border-color: var(--ng); background: var(--ng-soft); }
+.choices button.dim { opacity: .55; }
+.qlead { font-size: .8rem; font-weight: 700; color: var(--accent); margin: 0 0 -.4rem; }
 .toc { display: grid; gap: .35rem; }
 .toc button { font: inherit; cursor: pointer; text-align: left; display: grid; grid-template-columns: 1.6rem 1fr auto; align-items: center; gap: .45rem; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); padding: .5rem .65rem; min-height: 2.9rem; }
 .toc button .no { font-family: var(--font-display); font-weight: 900; font-size: 1.05rem; color: var(--muted); text-align: center; }
@@ -201,7 +209,9 @@ footer { font-size: .72rem; color: var(--muted); display: grid; gap: .15rem; }
   <!-- quiz -->
   <section class="card" id="quizCard" hidden>
     <div class="qhead"><span class="qno" id="qno">–</span><span style="display:flex;gap:.35rem;align-items:center"><button type="button" class="schip on" id="soundChip" aria-pressed="true">音：あり</button><span class="stage" id="stage"></span></span></div>
+    <p class="qlead" id="qlead" hidden>この説明にあてはまる言葉はどれ？</p>
     <div class="qtext" id="qtext"></div>
+    <div class="choices" id="choices" hidden role="group" aria-label="答えの選択肢"></div>
     <div class="mark" id="mark"></div>
     <div class="heard" id="heard"></div>
     <div class="subs" aria-live="polite" aria-label="字幕"><p class="sub prev" id="subPrev"></p><p class="sub" id="subCur"></p></div>
@@ -363,7 +373,7 @@ function voiceJudge(sid, alts) {
   }
   return first || { status: "none", heard: alts[0] || "" };
 }
-window.__textJudge = textJudge; window.__voiceJudge = voiceJudge; window.__steps = STEPS.map(function (x) { return { sid: x.sid, label: x.item.label, kind: x.s.kind, a: x.s.a, accept: x.s.accept, kw: !!x.s.kw }; });
+window.__textJudge = textJudge; window.__voiceJudge = voiceJudge; window.__steps = STEPS.map(function (x) { return { sid: x.sid, label: x.item.label, kind: x.s.kind, a: x.s.a, accept: x.s.accept, kw: !!x.s.kw, choices: x.s.choices || null }; });
 
 /* ---------- 地図 ---------- */
 var MP = Q.map, zoomOn = true, focusLab = null;
@@ -628,7 +638,84 @@ function answerText(x) {
     st.cancelText = function () { if (textResolve) { textResolve = null; resolve({ aborted: true }); } };
   });
 }
+/* ---------- 5択（説明を読んで、5つの言葉から選ぶ） ---------- */
+var choiceResolve = null;
+var NUMW = [["1", "１", "一", "いち", "ひとつ"], ["2", "２", "二", "に", "ふたつ"], ["3", "３", "三", "さん", "みっつ"], ["4", "４", "四", "よん", "し", "よっつ"], ["5", "５", "五", "ご", "いつつ"]];
+function choiceVoice(s, alts) {   // 言った言葉 → 選択肢の番号（0〜4）、"pass"、-1
+  for (var a = 0; a < alts.length; a++) {
+    var raw = String(alts[a] || ""), t = vnorm(raw), ty = yomi(t).replace(/ー/g, "");
+    if (!t) continue;
+    if (/わから|分から|わかんな|パス/.test(raw)) return "pass";
+    var order = s.choices.map(function (c, i) { return i; }).sort(function (p, q) { return s.choices[q].length - s.choices[p].length; });
+    for (var k = 0; k < order.length; k++) {
+      var c = s.choices[order[k]], f = [vnorm(c), yomi(tnorm(c)).replace(/ー/g, "")];
+      if (order[k] === s.choices.indexOf(s.a)) s.accept.forEach(function (x) { f.push(vnorm(x)); f.push(yomi(tnorm(x)).replace(/ー/g, "")); });
+      if (f.some(function (v) { return v && (t.indexOf(v) >= 0 || ty.indexOf(v) >= 0); })) return order[k];
+    }
+    var m = raw.replace(/\s/g, "").match(/^(?:えーと|えっと)?(.{1,4}?)(?:番|ばん|番目|ばんめ|つめ|つ目)?(?:です|かな)?$/);
+    if (m) for (var n = 0; n < 5; n++) if (NUMW[n].indexOf(m[1]) >= 0) return n;
+  }
+  return -1;
+}
+function showChoices(x) {
+  var box = $("choices"); box.innerHTML = "";
+  x.s.choices.forEach(function (c, i) {
+    var b = document.createElement("button"); b.type = "button"; b.id = "ch" + i;
+    var n = document.createElement("span"); n.className = "cn"; n.textContent = String(i + 1);
+    var t = document.createElement("span"); t.textContent = c;
+    b.appendChild(n); b.appendChild(t);
+    b.onclick = function () { if (choiceResolve) choiceResolve(i); };
+    box.appendChild(b);
+  });
+  box.hidden = false; $("qlead").hidden = false;
+}
+function hideChoices() { $("choices").hidden = true; $("choices").innerHTML = ""; $("qlead").hidden = true; }
+function markChoices(x, picked) {
+  var ci = x.s.choices.indexOf(x.s.a);
+  x.s.choices.forEach(function (c, i) {
+    var b = $("ch" + i); if (!b) return; b.disabled = true;
+    b.className = i === ci ? "ok" : i === picked ? "ng" : "dim";
+  });
+}
+function answerChoice(x) {
+  var my = st.token, s = x.s;
+  return new Promise(function (resolve) {
+    var done = false;
+    function fin(r) { if (done) return; done = true; choiceResolve = null; st.cancelChoice = null; resolve(r); }
+    choiceResolve = function (i) {
+      abortRec();
+      if (i === "pass") { markChoices(x, -1); showHeard("わからない"); fin({ ok: false, pass: true, heard: "わからない" }); return; }
+      var h = (i + 1) + "．" + s.choices[i];
+      markChoices(x, i); showHeard(h); fin({ ok: s.choices[i] === s.a, heard: h });
+    };
+    st.cancelChoice = function () { abortRec(); fin({ aborted: true }); };
+    if (ansMode === "voice" && !manualOnly) {
+      (async function () {
+        for (var attempt = 0; attempt < 3 && !done; attempt++) {
+          passFlag = false;
+          setMic("on", "言葉か番号を言ってね"); bgmLevel("listen");
+          if (IOS) await wait(350);
+          var r = await listenOnce(8000);
+          if (done) return;
+          setMic("off", "判定中…"); bgmLevel("normal");
+          if (!alive(my)) { fin({ aborted: true }); return; }
+          if (r.pass) { passFlag = false; choiceResolve("pass"); return; }
+          if (r.error === "denied") { manualOnly = true; $("srWarn").hidden = false; break; }
+          var k = choiceVoice(s, r.alts || []);
+          if (k !== -1) { choiceResolve(k); return; }
+          if (r.alts && r.alts[0]) showHeard(r.alts[0]);
+          if (attempt < 2) { setMic("off", "もう一回言ってね"); await play("retry"); if (done || !alive(my)) return; }
+        }
+        if (!done) setMic("off", "答えをタップしてね");
+      })();
+    } else setMic("off", "答えをタップしてね");
+  });
+}
+window.__choiceVoice = function (sid, alts) { return choiceVoice(BYSID[sid].s, alts); };
+window.__choiceWaiting = function () { return !!choiceResolve; };
+
 async function answer(x) {
+  if (x.s.choices) return answerChoice(x);
   if (ansMode === "text") return answerText(x);
   var my = st.token, last = "";
   if (manualOnly) { setMic("off", "ボタンで答え合わせしてね"); return askManual(x); }
@@ -687,6 +774,7 @@ async function run() {
     $("qno").innerHTML = ""; $("qno").appendChild(document.createTextNode(ISMAP ? x.item.label + " " : "問題 "));
     var sm = document.createElement("small"); sm.textContent = (st.pos + 1) + " / " + st.list.length; $("qno").appendChild(sm);
     $("stage").textContent = stageName(s); $("qtext").textContent = s.q;
+    if (s.choices) { showChoices(x); $("ansForm").hidden = true; } else { hideChoices(); $("ansForm").hidden = ansMode !== "text"; }
     if (qMode === "voice") {
       setMic("off", "問題をよく聞いてね");
       await play("q" + x.sid); if (!alive(my)) return;
@@ -722,7 +810,7 @@ async function finish(my) {
   releaseWake();
 }
 function showResults() {
-  bgmStop(); document.body.classList.remove("textmode"); show("resCard"); mapOverview();
+  hideChoices(); bgmStop(); document.body.classList.remove("textmode"); show("resCard"); mapOverview();
   var box = $("rlist"); box.innerHTML = "";
   st.list.forEach(function (sid) {
     var x = BYSID[sid], r = res[sid], row = document.createElement("div"); row.className = "ritem";
@@ -786,13 +874,14 @@ $("toStart").onclick = function () { st.token++; document.body.classList.remove(
 function pause() {
   if (st.mode !== "run") return;
   st.token++; stopVoice(); passFlag = false; abortRec();
-  if (st.cancelManual) st.cancelManual(); if (st.cancelText) st.cancelText(); if (st.cancelNext) st.cancelNext();
+  if (st.cancelManual) st.cancelManual(); if (st.cancelText) st.cancelText(); if (st.cancelNext) st.cancelNext(); if (st.cancelChoice) st.cancelChoice();
   st.mode = "paused"; setMic("off", "一時停止中"); bgmLevel("off"); $("pauseBtn").textContent = "再開"; releaseWake();
 }
 function resume() { if (st.mode !== "paused") return; bgmLevel("normal"); requestWake(); run(); }
 $("pauseBtn").onclick = function () { if (st.mode === "run") pause(); else if (st.mode === "paused") resume(); };
 $("againBtn").onclick = function () { if (st.mode === "run") { pause(); resume(); } else if (st.mode === "paused") resume(); };
 $("passBtn").onclick = function () {
+  if (choiceResolve) { choiceResolve("pass"); return; }
   if (ansMode === "text") { if (textResolve) { var r = textResolve; textResolve = null; r({ pass: true }); } return; }
   if (curRec) { passFlag = true; try { curRec.abort(); } catch (e) {} }
 };

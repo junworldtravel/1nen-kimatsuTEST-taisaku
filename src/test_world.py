@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 """
 MOCK = open(D + "/scripts/mock_sr.js").read()
 Q = {q["id"]: q for q in json.load(open(D + "/quizzes_world.json"))}
-PAGES = ["af-qa", "na-qa", "sa-qa"]
+PAGES = ["af-qa", "na-qa", "sa-qa", "oc-qa", "af-map", "na-map", "sa-map", "oc-map"]
+QA = [p for p in PAGES if p.endswith("-qa")]
 fails = []
 def check(cond, msg):
     if not cond: fails.append(msg); print("  FAIL", msg)
@@ -35,9 +36,19 @@ async def judge_tests(pg, qid):
     n = 0
     TJ = "([s,i]) => window.__textJudge(s,i).status"
     VJ = "([s,a]) => { const r = window.__voiceJudge(s,a); return r.status === 'hit' ? (r.correct ? 'correct' : 'wrong') : r.status; }"
+    CV = "([s,a]) => window.__choiceVoice(s,a)"
     for st in steps:
         sid = st["sid"]
         if st["kw"]: continue
+        if st["choices"]:
+            ch = st["choices"]; ci = ch.index(st["a"])
+            for i, c in enumerate(ch):
+                r = await pg.evaluate(CV, [sid, [c]]); n += 1; check(r == i, f"{qid} choice word {sid} {c} -> {r}")
+                r = await pg.evaluate(CV, [sid, [f"{i + 1}番"]]); n += 1; check(r == i, f"{qid} choice num {sid} {i + 1} -> {r}")
+                r = await pg.evaluate(CV, [sid, [f"えーと{c}です"]]); n += 1; check(r == i, f"{qid} choice phrase {sid} {c} -> {r}")
+            r = await pg.evaluate(CV, [sid, ["わからない"]]); n += 1; check(r == "pass", f"{qid} choice pass {sid} -> {r}")
+            r = await pg.evaluate(CV, [sid, ["あいうえお"]]); n += 1; check(r == -1, f"{qid} choice none {sid} -> {r}")
+            continue
         for a in st["accept"]:
             r = await pg.evaluate(TJ, [sid, a]); n += 1; check(r == "correct", f"{qid} text {sid} {a} -> {r}")
             r = await pg.evaluate(TJ, [sid, hira(a)]); n += 1; check(r == "correct", f"{qid} text hira {sid} {hira(a)} -> {r}")
@@ -74,6 +85,13 @@ SPECIAL = {   # (種類, 正解表示, 入力, 期待)
            ("t","適地適作","てきちてきさく","correct"),("t","北米自由貿易協定（NAFTA）","NAFTA","correct"),("t","北米自由貿易協定（NAFTA）","なふた","correct"),
            ("t","米国・メキシコ・カナダ協定（USMCA）","USMCA","correct"),("t","ワシントンD.C.","ワシントン","correct"),("t","ICT","ict","correct"),
            ("t","ヒスパニック","ひすぱにっく","correct"),("v","サンベルト","サンベルト","correct"),("t","貿易摩擦","ぼうえきまさつ","correct"),("t","多国籍企業","たこくせき","correct")],
+ "oc-qa": [("t","大鑽井盆地","だいさんせいぼんち","correct"),("t","白豪主義","はくごうしゅぎ","correct"),("t","アボリジニ","アボリジナル","correct"),
+           ("t","マオリ","アボリジニ","wrong"),("t","APEC","apec","correct"),("t","露天掘り","ろてんぼり","correct"),("t","牧羊（羊）","羊","correct"),
+           ("t","グレートバリアリーフ","ぐれーとばりありーふ","correct"),("t","キャンベラ","シドニー","wrong"),("v","日付変更線","日付変更線","correct")],
+ "af-map": [("t","サハラ砂漠","さはら","correct"),("t","紅海","こうかい","correct"),("v","紅海","公開","correct"),("t","大西洋","インド洋","wrong"),("t","ビクトリア湖","ヴィクトリア湖","correct")],
+ "na-map": [("t","五大湖","ごだいこ","correct"),("t","リオグランデ川","りおぐらんで","correct"),("t","西インド諸島","にしいんどしょとう","correct"),("t","アラスカ州","アラスカ","correct")],
+ "sa-map": [("t","ギアナ高地","ぎあなこうち","correct"),("t","マゼラン海峡","まぜらん","correct"),("t","太平洋","大西洋","wrong")],
+ "oc-map": [("t","大鑽井盆地","だいさんせい","correct"),("t","グレートサンディー砂漠","グレートサンディ砂漠","correct"),("t","パプアニューギニア","ぱぷあにゅーぎにあ","correct")],
  "sa-qa": [("t","アンデス山脈","あんです","correct"),("t","大西洋","太平洋","wrong"),("t","パンパ","ぱんぱ","correct"),("t","メスチーソ","メスティーソ","correct"),
            ("t","ポルトガル語","スペイン語","wrong"),("t","スペイン語","すぺいんご","correct"),("t","バイオ燃料（バイオエタノール）","バイオエタノール","correct"),
            ("t","持続可能な開発","じぞくかのう","correct"),("t","サンティアゴ","サンチアゴ","correct"),("t","熱帯林の破壊","森林破壊","correct"),
@@ -89,6 +107,14 @@ async def run_text(pg, qid, qmode):
     expect = {}
     for k, st in enumerate(steps):
         sid = st["sid"]
+        if st["choices"]:
+            await pg.wait_for_function("(sid) => { const s = window.__quizState(); return s.st.list[s.st.pos] === sid && window.__choiceWaiting(); }", arg=sid, timeout=15000)
+            ci = st["choices"].index(st["a"]); ok = k % 3 != 2
+            if k % 6 == 5: await pg.click("#passBtn"); ok = False
+            else: await pg.click("#ch%d" % (ci if ok else (ci + 1) % 5))
+            expect[sid] = ok
+            await pg.wait_for_function("(sid) => window.__quizState().res[sid] !== undefined", arg=sid, timeout=15000)
+            continue
         await pg.wait_for_function("(sid) => { const s = window.__quizState(); return s.st.list[s.st.pos] === sid && window.__textWaiting(); }", arg=sid, timeout=15000)
         if st["kw"]: v, ok = ("原油を輸出したから", True) if k % 2 == 0 else ("わからない", False)
         elif k % 5 == 0: v, ok = "わからない", False
@@ -109,6 +135,13 @@ async def run_voice(pg, qid, qmode):
     answers, expect = [], {}
     for k, st in enumerate(steps):
         if st["kw"]: answers.append("石油を輸出したからです"); expect[st["sid"]] = True; continue
+        if st["choices"]:
+            ch = st["choices"]; ci = ch.index(st["a"]); m = k % 4
+            if m == 0: answers.append(ch[ci]); expect[st["sid"]] = True
+            elif m == 1: answers.append(f"{ci + 1}番"); expect[st["sid"]] = True
+            elif m == 2: answers.append("わからない"); expect[st["sid"]] = False
+            else: answers += [None, ch[(ci + 2) % 5]]; expect[st["sid"]] = False
+            continue
         m = k % 4
         if m == 0: answers.append(st["accept"][0]); expect[st["sid"]] = True
         elif m == 1: answers.append("えーと " + st["accept"][-1] + " かな"); expect[st["sid"]] = True
@@ -158,9 +191,13 @@ async def main():
             wrong = [s for s, ok in exp.items() if not ok]
             await pg.click("#retryBtn")
             for sid in wrong:
-                await pg.wait_for_function("(sid) => { const s = window.__quizState(); return s.st.list[s.st.pos] === sid && window.__textWaiting(); }", arg=sid, timeout=15000)
                 st = next(x for x in await pg.evaluate("window.__steps") if x["sid"] == sid)
-                await pg.fill("#ans", "原油を輸出したから" if st["kw"] else st["accept"][0]); await pg.press("#ans", "Enter")
+                if st["choices"]:
+                    await pg.wait_for_function("(sid) => { const s = window.__quizState(); return s.st.list[s.st.pos] === sid && window.__choiceWaiting(); }", arg=sid, timeout=15000)
+                    await pg.click("#ch%d" % st["choices"].index(st["a"]))
+                else:
+                    await pg.wait_for_function("(sid) => { const s = window.__quizState(); return s.st.list[s.st.pos] === sid && window.__textWaiting(); }", arg=sid, timeout=15000)
+                    await pg.fill("#ans", "原油を輸出したから" if st["kw"] else st["accept"][0]); await pg.press("#ans", "Enter")
                 await pg.wait_for_function("(sid) => window.__quizState().res[sid] !== undefined", arg=sid)
             await pg.wait_for_selector("#resCard:not([hidden])", timeout=20000)
             stt = await pg.evaluate("window.__quizState()")
@@ -193,7 +230,7 @@ async def main():
                 await ctx.close()
             print("  runs ok" if not [f for f in fails if f.startswith(qid)] else "  runs had failures")
 
-        for qid in PAGES:
+        for qid in QA:
             N = len(Q[qid]["items"])
             ctx, pg, errs = await open_page(b, qid, "#b-text")
             st = await pg.evaluate("window.__quizState()")
@@ -240,7 +277,7 @@ async def main():
             ctx, pg, errs = await open_page(b, qid, "#a-text")
             await pg.evaluate("window.__setSecs(['" + secs[-1]["id"] + "'])")
             await pg.click("#startBtn")
-            await pg.wait_for_function("window.__quizState().st.list.length > 0 && window.__textWaiting()", timeout=20000)
+            await pg.wait_for_function("window.__quizState().st.list.length > 0 && (window.__textWaiting() || window.__choiceWaiting())", timeout=20000)
             subs = await pg.evaluate("window.__subs")
             sd = json.loads(await pg.evaluate("document.getElementById('qdata').textContent"))["subs"]
             check(not any(sd["count"]["text"] in x for x in subs), f"{qid} count spoken for partial")
@@ -254,8 +291,8 @@ async def main():
             await pg.goto("file://" + SITE + qid + ".html#a-text")
             await pg.wait_for_function("!document.getElementById('startBtn').disabled", timeout=30000)
             await pg.screenshot(path=f"{D}/out/t3_{qid}_start.png", full_page=True)
-            await pg.evaluate("window.__setSecs(['1'])"); await pg.screenshot(path=f"{D}/out/t3_{qid}_toc1.png", full_page=False)
-            await pg.click("#secAll")
+            if qid in QA:
+                await pg.evaluate("window.__setSecs(['x'])"); await pg.screenshot(path=f"{D}/out/t3_{qid}_toc1.png", full_page=False)
             await pg.uncheck("#intro", force=True); await pg.click("#startBtn"); await pg.wait_for_timeout(2600)
             await pg.screenshot(path=f"{D}/out/t3_{qid}_quiz.png")
             await pg.click("#pauseBtn")
